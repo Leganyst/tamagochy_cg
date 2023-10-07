@@ -1,7 +1,6 @@
 
 #include "img.h"
 #include "display.h"
-#include "sd_module.h"
 
 #define BLUE 0x001F
 #define DARKGREEN 0x03E0
@@ -23,9 +22,6 @@ unsigned long previousHappyMillis = 0;
 unsigned long previousSleepMillis = 0;
 
 
-const int chipSelectPin = 10; // Подключите пин CS карточки SD к пину 10
-
-SDChecker sdChecker(chipSelectPin);
 
 void setup() {
   tft.reset();
@@ -36,11 +32,6 @@ void setup() {
   tft.fillScreen(BLACK);
   initializeEEPROM();
 
-  if (sdChecker.isSDCardAvailable()) {
-    Serial.println("SD карта обнаружена!");
-  } else {
-    Serial.println("SD карта не обнаружена.");
-  }
   displayValues();
 }
 
@@ -72,11 +63,6 @@ void loop() {
     if (isTouched && !wasTouched) {
       // Если было нажатие и предыдущее состояние не было нажатым
       incrementHappy();
-      decrementafterGAME();
-      displayValues();
-    }
-          
+      displayValues();}    
     delay(100);  // Небольшая задержка для стабилизации вывода в Serial порт
-  
-    
 }

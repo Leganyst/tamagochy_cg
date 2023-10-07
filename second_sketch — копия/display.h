@@ -2,7 +2,7 @@
 #include "Adafruit_GFX.h"
 #include "MCUFRIEND_kbv.h"
 #include <TouchScreen.h>
-//#include "image_bad.h"
+
 MCUFRIEND_kbv tft;
 
 #define BLUE 0x001F
@@ -28,7 +28,7 @@ int foodValue;
 int happyValue;
 
 // константы интервалы
-const unsigned long foodInterval = 10000;  // Интервал в миллисекундах (10 секунд) для декремента food
+const unsigned long foodInterval = 20000;  // Интервал в миллисекундах (20 секунд) для декремента food
 const unsigned long happyInterval = 30000;  // Интервал в миллисекундах (30 секунд) для декремента happy
 const unsigned long sleepInterval = 60000;  // Интервал в миллисекундах (60 секунд) для декремента sleep
 
@@ -86,22 +86,6 @@ void decrementSleep() {
   }
 }
 
-// ------------ После игры -------------------
-void decrementafterGAME() {
-  sleepValue=sleepValue - 3;
-  sleepValue = max(sleepValue, 0);
-  foodValue=foodValue-2;
-  foodValue = max(foodValue, 0);
-  writeEEPROM();
-  if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
-    dogIsAlive = false;
-  }
-}
-
-
-
-
-
 // ------------ Вывод характеристик-------------------
 void displayCharacteristic(const char *label, int value, int x, int y) {
   tft.setTextSize(1.1);
@@ -131,7 +115,6 @@ void displayValues() {
     displayCharacteristic("Happy: ", happyValue, 10, 50);
     tft.setTextColor(WHITE);
     tft.drawRGBBitmap(130, 120, image, 64, 64);
-//    tft.drawRGBBitmap(200, 20, image_bad, 32, 32);
   } else {
 //    tft.setTextColor(TFT_RED);
 //    tft.setTextSize(3);
@@ -165,11 +148,17 @@ bool isTouchingImage(int x, int y, int width, int height) {
   pinMode(XM, OUTPUT);
     int screen_x = map(touch.y, TS_LEFT, TS_RT, 0, 320);
     int screen_y = map(touch.x, TS_TOP, TS_BOT, 0, 240);
+
+    Serial.print(screen_x);
+    Serial.print(" ");
+    Serial.println(screen_y);
   if (touch.z > MINPRESSURE && touch.z < MAXPRESSURE) {
+
     if (screen_x >= x && screen_x <= x + width && screen_y >= y && screen_y <= y + height) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -190,8 +179,6 @@ void displayGameOverScreen() {
   tft.setTextColor(TFT_RED);
   tft.setCursor(65, 100);
   tft.print("YOUR PUG IS DEAD");
-  tft.setCursor(15, 150);
-  tft.print("Press the button to restart");
- 
-
+  tft.setCursor(75, 150);
+  tft.print("Tap for restart");
 }
