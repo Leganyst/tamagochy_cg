@@ -1,8 +1,4 @@
-
-#include "img.h"
 #include "display.h"
-#include "sd_module.h"
-
 #define BLUE 0x001F
 #define DARKGREEN 0x03E0
 #define BLACK 0x0000
@@ -22,12 +18,17 @@ unsigned long previousFoodMillis = 0;
 unsigned long previousHappyMillis = 0;
 unsigned long previousSleepMillis = 0;
 
-
-const int chipSelectPin = 10; // Подключите пин CS карточки SD к пину 10
-
+#define SD_CS 10
 
 void setup() {
   tft.reset();
+
+  if (!SD.begin(SD_CS)) {
+    Serial.println("SD card initialization failed!");
+    return;
+  }
+
+  
   Serial.begin(9600);
   uint16_t ID = tft.readID();
   tft.begin(ID);
