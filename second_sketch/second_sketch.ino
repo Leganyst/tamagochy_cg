@@ -34,7 +34,7 @@ void setup() {
   tft.setRotation(Orientation);
   tft.fillScreen(BLACK);
   initializeEEPROM();
-
+}
 
 void loop() {
     unsigned long currentMillis = millis();
