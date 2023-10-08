@@ -22,6 +22,10 @@ MCUFRIEND_kbv tft;
 #define WHITE 0xFFFF
 #define YELLOW 0xFFE0
 
+unsigned long sleepScreenStartTime = 0;
+const unsigned long sleepScreenDuration = 15000; // 15 секунд в миллисекундах
+
+
 const int XP=8,XM=A2,YP=A3,YM=9; //240x320 ID=0x7575
 const int TS_LEFT=962,TS_RT=168,TS_TOP=202,TS_BOT=953;
 uint8_t Orientation = 1;    //LANDSCAPE
@@ -38,11 +42,17 @@ int sleepValue;
 int foodValue;
 int happyValue;
 
+int count_food = 0;
+
+unsigned long lastUpdateTime = 0;
+int foodLoss = 6;
+int happyLoss = 3;
+int sleepLoss = 2;
+
 // константы интервалы
 const unsigned long foodInterval = 10000;  // Интервал в миллисекундах (10 секунд) для декремента food
 const unsigned long happyInterval = 30000;  // Интервал в миллисекундах (30 секунд) для декремента happy
 const unsigned long sleepInterval = 60000;  // Интервал в миллисекундах (60 секунд) для декремента sleep
-
 
 // объявления функций
 void displayGameOverScreen();
@@ -64,39 +74,67 @@ void readEEPROM() {
 
 
 // ------------ Еда -------------------
-void decrementFood() {
-  foodValue--;
-  foodValue = max(foodValue, 0);
-  writeEEPROM();
-  if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
-    dogIsAlive = false;
-  }
+void decrementFood(int loss) {
+    foodValue -= loss;
+    foodValue = max(foodValue, 0);
+    writeEEPROM();
+    if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
+        dogIsAlive = false;
+    }
 }
 
+void incrementFood() {
+  foodValue++;
+  count_food += 1;
+  Serial.println("Increment happy");
+  foodValue = min(foodValue, 100);  // Убедитесь, что значение happy не превышает 100
+  writeEEPROM();  // Сохраните значение в EEPROM, если необходимо
+  if (count_food >= 5) {
+    sleepValue -= 2;
+    sleepValue = max(sleepValue, 0);
+    count_food = 0;
+    if (sleepValue <= 0) dogIsAlive = false;
+    }
+}
+
+
 // ------------ Счастье -------------------
-void decrementHappy() {
-  happyValue--;
-  happyValue = max(happyValue, 0);
-  writeEEPROM();
-  if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
-    dogIsAlive = false;
-  }
+void decrementHappy(int loss) {
+    happyValue -= loss;
+    happyValue = max(happyValue, 0);
+    writeEEPROM();
+    if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
+        dogIsAlive = false;
+    }
 }
 
 void incrementHappy() {
   happyValue++;
+  Serial.println("Increment happy");
   happyValue = min(happyValue, 100);  // Убедитесь, что значение happy не превышает 100
   writeEEPROM();  // Сохраните значение в EEPROM, если необходимо
 }
 
 // ------------ Сон -------------------
-void decrementSleep() {
-  sleepValue--;
-  sleepValue = max(sleepValue, 0);
-  writeEEPROM();
-  if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
-    dogIsAlive = false;
-  }
+void decrementSleep(int loss) {
+    sleepValue -= loss;
+    sleepValue = max(sleepValue, 0);
+    writeEEPROM();
+    if (foodValue == 0 || happyValue == 0 || sleepValue == 0) {
+        dogIsAlive = false;
+    }
+}
+
+
+void sleepValuesUpdate() {
+    sleepValue += 25;
+    sleepValue = min(sleepValue, 100);
+    foodValue -= 25;
+    foodValue = max(foodValue, 0);
+    happyValue += 25;
+    happyValue = max(foodValue, 100);
+    
+    if (foodValue <= 0) dogIsAlive = false;
 }
 
 // ------------ После игры -------------------
@@ -112,6 +150,9 @@ void decrementafterGAME() {
 }
 // ------------ Вывод характеристик-------------------
 void displayCharacteristic(const char *label, int value, int x, int y) {
+  // Очищаем область на экране, где будет выводиться текст
+  tft.fillRect(x, y, 65, 20, BLACK); // Замените 100 и 20 на ширину и высоту вашего текста
+
   tft.setTextSize(1.1);
   tft.setTextColor(WHITE);  
   tft.setCursor(x, y);
@@ -127,13 +168,13 @@ void displayCharacteristic(const char *label, int value, int x, int y) {
   }
 
   tft.setTextColor(color);  
-  tft.println(value);
+  tft.print(value); // Теперь используем tft.print() вместо tft.println() для вывода значения
   tft.setTextColor(WHITE);
 }
 
+
 void displayValues() {
   if (dogIsAlive) {
-    bmpDraw("/room.bmp", 0, 0);
     displayCharacteristic("Sleep: ", sleepValue, 10, 10);
     displayCharacteristic("Food: ", foodValue, 10, 30);
     displayCharacteristic("Happy: ", happyValue, 10, 50);
@@ -167,6 +208,10 @@ bool isTouchingImage(int x, int y, int width, int height) {
   pinMode(XM, OUTPUT);
     int screen_x = map(touch.y, TS_LEFT, TS_RT, 0, 320);
     int screen_y = map(touch.x, TS_TOP, TS_BOT, 0, 240);
+   Serial.print("X - ");
+   Serial.print(screen_x);
+   Serial.print(" Y - ");
+   Serial.println(screen_y);
   if (touch.z > MINPRESSURE && touch.z < MAXPRESSURE) {
     if (screen_x >= x && screen_x <= x + width && screen_y >= y && screen_y <= y + height) {
       return true;
@@ -201,11 +246,6 @@ void displayGameOverScreen() {
 
 
 // ---------------------Изображение-----------------------
-
-
-
-
-
 uint16_t read16(File f);
 uint32_t read32(File f);
 
@@ -258,14 +298,14 @@ void bmpDraw(char *filename, int x, int y) {
     bmpHeight = read32(bmpFile);
     if(read16(bmpFile) == 1) { // # planes -- must be '1'
       bmpDepth = read16(bmpFile); // bits per pixel
-      Serial.println(bmpDepth);
+//      Serial.println(bmpDepth);
       if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
 
         goodBmp = true; // Supported BMP format -- proceed!
 //        progmemPrint(PSTR("Image size: "));
-        Serial.print(bmpWidth);
-        Serial.print('x');
-        Serial.println(bmpHeight);
+//        Serial.print(bmpWidth);
+//        Serial.print('x');
+//        Serial.println(bmpHeight);
 
         // BMP rows are padded (if needed) to 4-byte boundary
         rowSize = (bmpWidth * 3 + 3) & ~3;
@@ -327,8 +367,8 @@ void bmpDraw(char *filename, int x, int y) {
           tft.pushColors(lcdbuffer, lcdidx, first);
         } 
 //        progmemPrint(PSTR("Loaded in "));
-        Serial.print(millis() - startTime);
-        Serial.println(" ms");
+//        Serial.print(millis() - startTime);
+//        Serial.println(" ms");
       } // end goodBmp
     }
   }
@@ -357,15 +397,15 @@ uint32_t read32(File f) {
   return result;
 }
 
-// Copy string from flash to serial port
-// Source string MUST be inside a PSTR() declaration!
+//Copy string from flash to serial port
+//Source string MUST be inside a PSTR() declaration!
 void progmemPrint(const char *str) {
-  char c;
-  while(c = pgm_read_byte(str++)) Serial.print(c);
+char c;
+while(c = pgm_read_byte(str++)) Serial.print(c);
 }
 
-// Same as above, with trailing newline
+//Same as above, with trailing newline
 void progmemPrintln(const char *str) {
-  progmemPrint(str);
-  Serial.println();
+progmemPrint(str);
+Serial.println();
 }
