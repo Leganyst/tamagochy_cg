@@ -6,7 +6,6 @@
 MCUFRIEND_kbv tft;
 #include <TouchScreen.h>
 
-
 #define LCD_CS A3 // Chip Select goes to Analog 3
 #define LCD_CD A2 // Command/Data goes to Analog 2
 #define LCD_WR A1 // LCD Write goes to Analog 1
@@ -25,6 +24,7 @@ MCUFRIEND_kbv tft;
 unsigned long sleepScreenStartTime = 0;
 const unsigned long sleepScreenDuration = 15000; // 15 секунд в миллисекундах
 
+const char *filename = "characteristics.txt";
 
 const int XP=8,XM=A2,YP=A3,YM=9; //240x320 ID=0x7575
 const int TS_LEFT=962,TS_RT=168,TS_TOP=202,TS_BOT=953;
@@ -60,6 +60,7 @@ void bmpDraw(char *filename, int x, int y);
 
 
 // якобы "запись" в файл
+
 void writeEEPROM() {
   EEPROM.put(0, sleepValue);
   EEPROM.put(sizeof(int), foodValue);
@@ -219,6 +220,9 @@ bool isTouchingImage(int x, int y, int width, int height) {
   }
   return false;
 }
+
+// ----------------- нажми на шар - игра ------------------
+
 
 
 // -----------------Конец игры-----------------------------

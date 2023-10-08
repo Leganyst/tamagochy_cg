@@ -1,4 +1,6 @@
 #include "display.h"
+//#include "game.h"
+
 #define BLUE 0x001F
 #define DARKGREEN 0x03E0
 #define BLACK 0x0000
@@ -18,11 +20,12 @@ boolean wasTouched = false;  // Флаг для отслеживания пре�
 void setup() {
   tft.reset();
 
-  if (!SD.begin(SD_CS)) {
-    Serial.println("SD card initialization failed!");
+  if (SD.begin(10)) { // Pin 10 is chip select for the SD card module
+    Serial.println("SD card initialized.");
+  } else {
+    Serial.println("SD card initialization failed.");
     return;
   }
-
   
   Serial.begin(9600);
   uint16_t ID = tft.readID();
@@ -70,5 +73,5 @@ void loop() {
         incrementFood();
         displayValues();
     }
-    delay(100);  // Небольшая задержка для стабилизации вывода в Serial порт
-}
+   delay(100);  // Небольшая задержка для стабилизации вывода в Serial порт
+  }
